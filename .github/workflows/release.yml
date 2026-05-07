@@ -22,10 +22,15 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
-      - name: Upgrade npm to a Trusted-Publishers-capable version
-        # --force bypasses the self-upgrade self-destruct bug where the bundled npm
-        # in setup-node loses dependencies (promise-retry, etc.) mid-install.
-        run: npm install -g npm@latest --force
+      - name: Activate latest npm via corepack
+        # The npm bundled with setup-node's toolcache image is corrupted
+        # (missing promise-retry), so `npm install -g npm@latest` self-destructs
+        # before it can replace itself. corepack downloads npm cleanly, bypassing
+        # the broken global install entirely.
+        run: |
+          corepack enable
+          corepack prepare npm@latest --activate
+          npm --version
 
       - name: Verify tag matches package.json version
         run: |
