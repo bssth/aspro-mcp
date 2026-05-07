@@ -1,5 +1,9 @@
 # aspro-mcp
 
+[![npm version](https://img.shields.io/npm/v/aspro-mcp.svg)](https://www.npmjs.com/package/aspro-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/aspro-mcp.svg)](https://www.npmjs.com/package/aspro-mcp)
+[![install size](https://packagephobia.com/badge?p=aspro-mcp)](https://packagephobia.com/result?p=aspro-mcp)
+[![types](https://img.shields.io/npm/types/aspro-mcp.svg)](https://www.npmjs.com/package/aspro-mcp)
 [![CI](https://github.com/bssth/aspro-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bssth/aspro-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
