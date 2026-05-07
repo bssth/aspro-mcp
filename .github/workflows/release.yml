@@ -25,18 +25,29 @@ jobs:
           # unset, npm treats this as "auth is already configured" and skips
           # the Trusted Publisher OIDC exchange, leading to a 404 on publish.
 
-      - name: Activate latest npm via corepack
-        # The npm bundled with setup-node's toolcache image is corrupted
-        # (missing promise-retry), so `npm install -g npm@latest` self-destructs
-        # before it can replace itself. corepack downloads npm cleanly, bypassing
-        # the broken global install entirely.
+      - name: Replace toolcache npm with latest (Trusted Publisher needs >=11.5.1)
+        # The bundled npm in setup-node's toolcache image is both (a) corrupted
+        # so `npm install -g npm@latest` self-destructs, and (b) too old (10.x)
+        # for the Trusted Publisher OIDC flow, which requires npm >= 11.5.1.
+        # Easiest reliable fix: download the npm tarball and overwrite the
+        # toolcache install directly. The PATH shim still points at the same
+        # location, but now resolves to a fresh, working npm.
         run: |
-          corepack enable
-          corepack prepare npm@latest --activate
+          set -euo pipefail
+          NPM_VERSION=$(curl -fsSL https://registry.npmjs.org/npm/latest | jq -r .version)
+          echo "Installing npm@${NPM_VERSION}"
+          NODE_PREFIX=$(node -p "require('path').dirname(require('path').dirname(process.execPath))")
+          NPM_DIR="${NODE_PREFIX}/lib/node_modules/npm"
+          curl -fsSL "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz
+          rm -rf "${NPM_DIR}"
+          mkdir -p "${NPM_DIR}"
+          tar -xzf /tmp/npm.tgz -C "${NPM_DIR}" --strip-components=1
           echo "npm version: $(npm --version)"
+          echo "npm path:    $(which npm)"
           echo "registry:    $(npm config get registry)"
-          echo "userconfig:  $(npm config get userconfig)"
-          test -f "$(npm config get userconfig)" && cat "$(npm config get userconfig)" || echo "(no userconfig)"
+          USERCONFIG=$(npm config get userconfig)
+          echo "userconfig:  ${USERCONFIG}"
+          [ -f "${USERCONFIG}" ] && cat "${USERCONFIG}" || echo "(no userconfig file)"
 
       - name: Verify tag matches package.json version
         run: |
