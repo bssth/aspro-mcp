@@ -23,7 +23,9 @@ jobs:
           cache: npm
 
       - name: Upgrade npm to a Trusted-Publishers-capable version
-        run: npm install -g npm@latest
+        # --force bypasses the self-upgrade self-destruct bug where the bundled npm
+        # in setup-node loses dependencies (promise-retry, etc.) mid-install.
+        run: npm install -g npm@latest --force
 
       - name: Verify tag matches package.json version
         run: |
