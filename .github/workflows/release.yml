@@ -19,8 +19,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          registry-url: https://registry.npmjs.org
           cache: npm
+          # Intentionally NOT setting registry-url. setup-node would write a
+          # ".npmrc" with "_authToken=${NODE_AUTH_TOKEN}" — when the token is
+          # unset, npm treats this as "auth is already configured" and skips
+          # the Trusted Publisher OIDC exchange, leading to a 404 on publish.
 
       - name: Activate latest npm via corepack
         # The npm bundled with setup-node's toolcache image is corrupted
@@ -30,7 +33,10 @@ jobs:
         run: |
           corepack enable
           corepack prepare npm@latest --activate
-          npm --version
+          echo "npm version: $(npm --version)"
+          echo "registry:    $(npm config get registry)"
+          echo "userconfig:  $(npm config get userconfig)"
+          test -f "$(npm config get userconfig)" && cat "$(npm config get userconfig)" || echo "(no userconfig)"
 
       - name: Verify tag matches package.json version
         run: |
