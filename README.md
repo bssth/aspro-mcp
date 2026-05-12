@@ -7,6 +7,7 @@
 [![CI](https://github.com/bssth/aspro-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/bssth/aspro-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+![MIU](https://img.shields.io/badge/made_in-Ukraine-ffd700?labelColor=0057b7)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes the [Aspro.Cloud](https://aspro.cloud) REST API to LLM clients (Claude Desktop, Claude Code, etc.). The server ships with the bundled OpenAPI spec, so the model can discover modules, entities and methods on its own and call them safely.
 
