@@ -13,10 +13,21 @@ export interface CallOptions {
 export interface CallResult {
   status: number;
   ok: boolean;
+  /** Request URL with the API key redacted — this value is shown to the model. */
   url: string;
+  /** Parsed JSON when the response is JSON, otherwise the raw body text. */
   data: unknown;
-  rawBody?: string;
+  truncated?: TruncationInfo;
 }
+
+export interface TruncationInfo {
+  reason: string;
+  hint: string;
+  returnedItems?: number;
+  totalItems?: number;
+}
+
+export const REDACTED = "***REDACTED***";
 
 export class AsproClient {
   constructor(private readonly config: AsproConfig) {}
@@ -28,6 +39,7 @@ export class AsproClient {
    */
   async call(op: OperationSpec, opts: CallOptions = {}): Promise<CallResult> {
     const url = this.buildUrl(op, opts);
+    const safeUrl = redactApiKey(url);
     const init: RequestInit = {
       method: op.httpMethod.toUpperCase(),
       headers: { Accept: "application/json" },
@@ -49,16 +61,23 @@ export class AsproClient {
     init.signal = controller.signal;
 
     let response: Response;
+    let rawBody: string;
     try {
       response = await fetch(url, init);
+      // Reading the body stays inside the timeout window: a response that
+      // starts fast but streams slowly must still be abortable.
+      rawBody = await response.text();
     } catch (err) {
-      clearTimeout(timer);
       const reason = err instanceof Error ? err.message : String(err);
-      throw new Error(`Request failed: ${op.httpMethod.toUpperCase()} ${url} — ${reason}`);
+      // Never let the raw URL into the error message — it carries the API key.
+      throw new Error(`Request failed: ${op.httpMethod.toUpperCase()} ${safeUrl} — ${reason}`);
+    } finally {
+      clearTimeout(timer);
     }
-    clearTimeout(timer);
 
-    const rawBody = await response.text();
+    // Non-JSON bodies stay as text in `data`. Previously the raw body was also
+    // returned alongside the parsed data, sending every successful payload to
+    // the model twice; `data` alone now carries it.
     let data: unknown = rawBody;
     const ct = response.headers.get("content-type") ?? "";
     if (ct.includes("application/json") && rawBody.length > 0) {
@@ -69,12 +88,14 @@ export class AsproClient {
       }
     }
 
+    const { value, truncated } = capResponseSize(data, this.config.maxResponseChars);
+
     return {
       status: response.status,
       ok: response.ok,
-      url,
-      data,
-      rawBody: typeof data === "string" ? undefined : rawBody.length > 0 ? rawBody : undefined,
+      url: safeUrl,
+      data: value,
+      truncated,
     };
   }
 
@@ -109,6 +130,68 @@ export class AsproClient {
       }
     }
     return url.toString();
+  }
+}
+
+/** Strip the api_key value from a URL so it never reaches the model or logs. */
+export function redactApiKey(url: string): string {
+  return url.replace(/([?&]api_key=)[^&]*/gi, `$1${REDACTED}`);
+}
+
+/**
+ * Keep a single tool result from swallowing the model's context. Paginated
+ * payloads lose trailing items (with a note saying how many were dropped);
+ * anything else falls back to a hard character cut.
+ */
+export function capResponseSize(
+  data: unknown,
+  maxChars: number,
+): { value: unknown; truncated?: TruncationInfo } {
+  const serialized = safeStringify(data);
+  if (serialized.length <= maxChars) return { value: data };
+
+  const items = (data as any)?.response?.items;
+  if (Array.isArray(items) && items.length > 0) {
+    const totalItems = items.length;
+    let kept = totalItems;
+    let candidate = data;
+    // Halve until it fits — cheaper than re-serializing per removed item.
+    while (kept > 1) {
+      kept = Math.floor(kept / 2);
+      candidate = {
+        ...(data as object),
+        response: { ...(data as any).response, items: items.slice(0, kept) },
+      };
+      if (safeStringify(candidate).length <= maxChars) break;
+    }
+    return {
+      value: candidate,
+      truncated: {
+        reason: `Response exceeded ASPRO_MAX_RESPONSE_CHARS (${maxChars}).`,
+        hint:
+          "Only the first items are shown. Narrow the request with query parameters " +
+          "(e.g. paging) or fetch a single record with the `get` method.",
+        returnedItems: kept,
+        totalItems,
+      },
+    };
+  }
+
+  return {
+    value: `${serialized.slice(0, maxChars)}…`,
+    truncated: {
+      reason: `Response exceeded ASPRO_MAX_RESPONSE_CHARS (${maxChars}).`,
+      hint: "Output was cut mid-payload and is no longer valid JSON. Request a narrower result set.",
+    },
+  };
+}
+
+function safeStringify(value: unknown): string {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value) ?? "";
+  } catch {
+    return String(value);
   }
 }
 
