@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   actually returns), `paginated`, and `mutating`. Response schemas were
   previously parsed and then discarded, leaving all 410 GET operations —
   60% of the API — with an empty description.
+- The server instructions now document the query parameters `list` endpoints
+  actually accept — `page`, `limit`, `filter[<field>]`, `search` — none of
+  which appear in the spec. Verified against a live tenant, along with two
+  traps the model must know: unsupported parameters are ignored silently
+  rather than rejected, and `total` reports the unfiltered count.
 - `ASPRO_MAX_RESPONSE_CHARS` (default 60000) caps a single tool result.
   Paginated payloads shed trailing items and report how many were dropped.
 - The server now starts without credentials and serves the offline discovery
