@@ -61,10 +61,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build & smoke test
+      - name: Build & test
         run: |
           npm run build
-          npm run smoke
+          npm test
 
       - name: Publish to npm (Trusted Publisher / OIDC)
         run: npm publish --provenance --access public

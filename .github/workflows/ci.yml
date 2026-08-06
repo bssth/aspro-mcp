@@ -30,3 +30,6 @@ jobs:
 
       - name: Smoke test
         run: npm run smoke
+
+      - name: End-to-end test
+        run: npm run e2e
