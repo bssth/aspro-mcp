@@ -33,8 +33,16 @@ const server = new McpServer(
       "Endpoint URLs follow /{module}/{entity}/{method}[/{id}]; POSTs use form-urlencoded.\n" +
       "Note that Aspro exposes /delete/{id} over HTTP GET — the HTTP verb does not indicate whether " +
       "an operation is destructive. Use the `mutating` flag from aspro_describe instead.\n" +
-      "The bundled spec documents no query parameters, but list endpoints do return " +
-      "{ total, page, count, items }, so paging is supported — pass such parameters through `query`.\n" +
+      "The bundled spec documents no query parameters, but list endpoints accept these (verified " +
+      "against a live tenant, pass them through `query`):\n" +
+      "  page=N               — 1-based page number.\n" +
+      "  limit=N              — shrinks the page; a page holds at most 25 items regardless.\n" +
+      "  filter[<field>]=v    — exact match on a response field, e.g. filter[id]=193.\n" +
+      "  search=<text>        — full-text search across the entity.\n" +
+      "Two traps: unknown or unsupported query parameters are ignored silently rather than " +
+      "rejected, so never assume a filter applied — verify it against the returned items. And " +
+      "`total` in the response reports the unfiltered count, so it does not tell you how many rows " +
+      "matched. No sort parameter was found to work.\n" +
       "Per-account custom fields (cf_<id> / cf_<alias>) are not in the spec because they differ per " +
       "tenant; they can still be read from responses and sent in `body`.",
   },

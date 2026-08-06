@@ -128,8 +128,23 @@ The recommended flow is `search`/`list_*` → `describe` → `call`/`write`.
 
 ## Notes on the bundled spec
 
-- The spec documents no query parameters at all, yet `list` endpoints return `{ total, page, count, items }` — paging works, it is simply undocumented. Pass such parameters through `query`.
-- Per-account custom fields (`cf_<id>` / `cf_<alias>`) are absent from the spec because they vary per tenant. They still come back in responses and can be sent in `body`.
+The spec documents no query parameters at all, yet `list` endpoints accept several. These were verified against a live tenant and are described to the model in the server instructions:
+
+| Parameter | Behaviour |
+| --- | --- |
+| `page=N` | 1-based page number. |
+| `limit=N` | Shrinks the page. A page holds at most 25 items regardless of a higher value. |
+| `filter[<field>]=v` | Exact match on a response field, e.g. `filter[id]=193`. Not every field is filterable. |
+| `search=<text>` | Full-text search across the entity. |
+
+Two traps worth knowing:
+
+- **Unknown or unsupported query parameters are ignored silently**, not rejected. A filter that does nothing looks exactly like a filter that matched everything, so verify against the returned items.
+- **`total` reports the unfiltered count**, so it does not tell you how many rows matched a filter.
+
+No working sort parameter was found.
+
+Per-account custom fields (`cf_<id>` / `cf_<alias>`) are absent from the spec because they vary per tenant. They still come back in responses and can be sent in `body`.
 
 ## Develop
 
