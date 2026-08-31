@@ -44,7 +44,11 @@ const server = new McpServer(
       "`total` in the response reports the unfiltered count, so it does not tell you how many rows " +
       "matched. No sort parameter was found to work.\n" +
       "Per-account custom fields (cf_<id> / cf_<alias>) are not in the spec because they differ per " +
-      "tenant; they can still be read from responses and sent in `body`.",
+      "tenant; they can still be read from responses and sent in `body`.\n" +
+      "Aspro has no separate \"subtask\" entity — a subtask (Russian: подзадача) is an ordinary " +
+      "task/tasks record with `parent_id` set to its parent task's id. List a task's subtasks with " +
+      "task/tasks/list and `filter[parent_id]=<parent id>`; create one with task/tasks/create and " +
+      "`body.parent_id=<parent id>`; re-parent or detach one with task/tasks/update.",
   },
 );
 

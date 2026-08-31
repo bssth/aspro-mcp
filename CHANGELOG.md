@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `aspro_search("подзадача")` / `aspro_search("subtask")` used to return zero
+  results — Aspro has no "subtask" endpoint, subtasks are `task/tasks`
+  records with `parent_id` set, and the stemmer can't match a token onto a
+  spec word that only differs by a *prefix* ("под-"/"sub-"). Added a small
+  synonym table so those queries retry against "задача"/"task" as well.
+- The server instructions now spell out the subtask mechanism directly:
+  `filter[parent_id]=<id>` to list a task's subtasks, `parent_id` in the
+  body to create or re-parent one.
+
 ## [0.2.0] - 2026-08-06
 
 ### Security

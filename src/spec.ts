@@ -74,6 +74,27 @@ const METHOD_BIAS: Record<string, number> = {
   delete: 0,
 };
 
+/**
+ * Domain terms that share no stem with the spec text they should find.
+ * Aspro has no "subtask" endpoint — a subtask is an ordinary task/tasks
+ * record with `parent_id` set — so "подзадача"/"subtask" score zero against
+ * "задача"/"tasks": the extra material is a *prefix*, which the
+ * suffix-trimming stemmer below cannot see through. Each entry retries the
+ * query token with the listed forms in addition to its own.
+ */
+const QUERY_SYNONYMS: [prefix: string, forms: string[]][] = [
+  ["подзадач", ["задача"]],
+  ["subtask", ["task"]],
+];
+
+function synonymFormsOf(token: string): string[] {
+  const forms: string[] = [];
+  for (const [prefix, extra] of QUERY_SYNONYMS) {
+    if (token.startsWith(prefix)) forms.push(...extra);
+  }
+  return forms;
+}
+
 export class SpecIndex {
   private readonly doc: OpenAPIDoc;
   private readonly operations: OperationSpec[] = [];
@@ -262,6 +283,10 @@ export class SpecIndex {
     if (!phrase) return [];
     const tokens = tokenize(phrase);
     if (tokens.length === 0) return [];
+    // Each query token keeps its own synonym forms alongside the literal
+    // word, so a hit on either still counts as one matched token below —
+    // "подзадача" alone must not need "задача" to *also* be typed.
+    const tokenForms = tokens.map((t) => [t, ...synonymFormsOf(t)]);
 
     const results: { score: number; index: number; op: OperationSpec }[] = [];
     for (let i = 0; i < this.operations.length; i++) {
@@ -269,8 +294,12 @@ export class SpecIndex {
       let score = 0;
       let matched = 0;
 
-      for (const token of tokens) {
-        const tokenScore = scoreToken(hay.fields, token);
+      for (const forms of tokenForms) {
+        let tokenScore = 0;
+        for (const form of forms) {
+          const s = scoreToken(hay.fields, form);
+          if (s > tokenScore) tokenScore = s;
+        }
         if (tokenScore === 0) continue;
         matched++;
         score += tokenScore;

@@ -108,6 +108,8 @@ for (const [query, expectedPath] of [
   ["создать задачу", "/task/tasks/create"],
   ["счёт", "/fin/invoice/list"],
   ["timesheet", "/timetracker/timesheets/list"],
+  ["подзадача", "/task/tasks/list"],
+  ["subtask", "/task/tasks/list"],
 ] as const) {
   await check(`search("${query}") finds ${expectedPath}`, () => {
     const results = spec.search(query, 10);
