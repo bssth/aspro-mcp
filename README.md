@@ -29,6 +29,8 @@ Run it straight from npm — no checkout needed:
 npx -y aspro-mcp
 ```
 
+The published package is a single bundled file with no runtime dependencies, so `npx` has exactly one package to fetch and the server is up within a few seconds even on a cold cache.
+
 Or clone and build:
 
 ```bash
@@ -81,6 +83,30 @@ For a local checkout, point at the built entry point instead:
 ### Other MCP clients
 
 Any client that speaks MCP over stdio can run `npx -y aspro-mcp` (or `node dist/index.js`).
+
+### "Connection timed out" on startup
+
+Versions up to 0.2.1 pulled in about 100 transitive packages, and `npx` could spend 30 seconds or more installing them — longer than MCP clients wait (Claude Code gives up after 30 s), so a perfectly healthy server showed up as failed. 0.2.2 and later ship as one bundled file and start in a few seconds.
+
+If your client still launches an old cached copy, ask for the current release explicitly with `"args": ["-y", "aspro-mcp@latest"]`. To take `npx` out of the picture altogether, install the package once and run the binary directly:
+
+```bash
+npm install -g aspro-mcp
+```
+
+```json
+{
+  "mcpServers": {
+    "aspro": {
+      "command": "aspro-mcp",
+      "env": {
+        "ASPRO_COMPANY": "your_company",
+        "ASPRO_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
 
 ## Configure
 
@@ -149,10 +175,12 @@ Per-account custom fields (`cf_<id>` / `cf_<alias>`) are absent from the spec be
 ## Develop
 
 ```bash
-npm run dev      # tsc --watch
-npm run build    # tsc
+npm run dev      # rebuild the bundle on change
+npm run build    # tsc (type-check) + esbuild bundle
 npm test         # smoke + e2e
 ```
+
+`npm run build` type-checks with `tsc` and then bundles the server and its dependencies into `dist/index.js` with esbuild (see `build.mjs`). The MCP SDK, zod and dotenv are therefore `devDependencies`: they are compiled in, not installed by users. Their license texts are collected into `dist/THIRD_PARTY_LICENSES.txt`.
 
 Neither suite hits the network. `npm run smoke` stubs `fetch` and asserts that the bundled spec parses, that mutating operations are classified correctly (including GET-served deletes), that search finds the expected endpoints, that URLs are built correctly, that the API key never appears in a tool result or error, and that oversized responses are capped. `npm run e2e` starts the built server over stdio with a real MCP client and checks the exposed tools, their annotations, and that `ASPRO_READ_ONLY` actually withholds `aspro_write`.
 
@@ -168,6 +196,7 @@ src/
   e2e.ts      stdio round-trip against a real MCP client
 spec/
   openapi.json  bundled Aspro.Cloud OpenAPI spec
+build.mjs     esbuild bundling + third-party license collection
 ```
 
 ## Contributing

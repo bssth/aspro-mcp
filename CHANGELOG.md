@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-10-12
+
+### Fixed
+- `npx -y aspro-mcp` could take 25–45 seconds to start on Windows — longer
+  than the 30 seconds MCP clients such as Claude Code wait — so a healthy
+  server was reported as "connection timed out". The three runtime
+  dependencies expanded to about 100 installed packages, and `npx` extracted
+  all of them again on start. The server is now published as a single bundled
+  file with no runtime dependencies: `npx` installs one package, and the same
+  machine completes the MCP handshake in about 3 seconds.
+
+### Changed
+- The build is now `tsc` for type-checking plus esbuild for output
+  (`build.mjs`). `dist/index.js` contains the MCP SDK, zod and dotenv, and
+  their license texts ship in `dist/THIRD_PARTY_LICENSES.txt`.
+- The npm tarball no longer contains the compiled test files.
+
 ## [0.2.1] - 2026-08-31
 
 ### Fixed
@@ -74,6 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Path-parameter substitution (`/get/{id}`, `/update/{id}`, …).
 - Configuration via `ASPRO_COMPANY` or `ASPRO_BASE_URL`, plus `ASPRO_API_KEY`.
 
-[Unreleased]: https://github.com/bssth/aspro-mcp/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bssth/aspro-mcp/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/bssth/aspro-mcp/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/bssth/aspro-mcp/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bssth/aspro-mcp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bssth/aspro-mcp/releases/tag/v0.1.0

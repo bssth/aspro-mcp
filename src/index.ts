@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 
 import { loadConfig } from "./config.js";
 import { AsproClient, type CallOptions } from "./client.js";
 import { SpecIndex, type OperationSpec } from "./spec.js";
 
-const require = createRequire(import.meta.url);
-const { version } = require("../package.json") as { version: string };
+const { version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string };
 
 const configResult = loadConfig();
 const spec = SpecIndex.loadDefault();
